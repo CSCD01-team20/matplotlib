@@ -653,3 +653,10 @@ def test_buffer_size(fig_test, fig_ref):
     ax = fig_ref.add_subplot()
     ax.set_yticks([0, 1])
     ax.set_yticklabels(["€", ""])
+
+
+@image_comparison(['fontproperties_merge'])
+def test_fontproperties_merge():
+    plt.figure()
+    plt.xlabel("value", fontproperties='Times New Roman', size=40)
+    plt.ylabel("counts", size=40, fontproperties='Times New Roman')

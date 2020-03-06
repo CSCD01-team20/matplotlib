@@ -1226,7 +1226,11 @@ class Text(Artist):
             `.FontProperties`.  If a `pathlib.Path`, it is interpreted as the
             absolute path to a font file.
         """
-        self._fontproperties = FontProperties._from_any(fp).copy()
+        fontproperties = FontProperties._from_any(fp).copy()
+        if hasattr(self, '_fontproperties'):
+            self._fontproperties.merge(fontproperties)
+        else:
+            self._fontproperties = fontproperties
         self.stale = True
 
     def set_usetex(self, usetex):

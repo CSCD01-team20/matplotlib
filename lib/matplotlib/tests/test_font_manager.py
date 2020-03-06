@@ -195,3 +195,15 @@ def test_fork():
     ctx = multiprocessing.get_context("fork")
     with ctx.Pool(processes=2) as pool:
         pool.map(_model_handler, range(2))
+
+
+def test_merge():
+    fp1 = FontProperties(family=['Times New Roman'])
+    fp2 = FontProperties(size=36.0)
+    assert fp1._size == 12.0
+    assert fp1._family == ['Times New Roman']
+    assert fp2._size == 36.0
+    assert fp2._family == ['sans-serif']
+    fp3 = fp1.copy().merge(fp2)
+    assert fp3._size == 36.0
+    assert fp3._family == ['Times New Roman']

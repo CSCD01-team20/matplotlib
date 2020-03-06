@@ -622,7 +622,7 @@ class FontProperties:
                  fname  = None,  # if set, it's a hardcoded filename to use
                  ):
         self._family = _normalize_font_family(rcParams['font.family'])
-        self._slant = rcParams['font.style']
+        self._style = rcParams['font.style']
         self._variant = rcParams['font.variant']
         self._weight = rcParams['font.weight']
         self._stretch = rcParams['font.stretch']
@@ -692,7 +692,7 @@ class FontProperties:
         """
         Return the font style.  Values are: 'normal', 'italic' or 'oblique'.
         """
-        return self._slant
+        return self._style
     get_slant = get_style
 
     def get_variant(self):
@@ -763,7 +763,7 @@ class FontProperties:
         if style is None:
             style = rcParams['font.style']
         cbook._check_in_list(['normal', 'italic', 'oblique'], style=style)
-        self._slant = style
+        self._style = style
     set_slant = set_style
 
     def set_variant(self, variant):
@@ -861,6 +861,27 @@ class FontProperties:
         new = type(self)()
         vars(new).update(vars(self))
         return new
+
+    def merge(self, fp):
+        """
+        Merges all keys from fp into self whose value is not default.
+
+        Parameters
+        ----------
+        fp : `.font_manager.FontProperties`
+
+        Returns
+        -------
+        `.font_manager.FontProperties`
+            Self
+        """
+        self_vars = vars(self)
+        for k, v in vars(fp).items():
+            # k starts with an underscore, remove it
+            rcparam_k = 'font.' + k[1:]
+            if rcparam_k in rcParams and rcParams[rcparam_k] != v:
+                self_vars[k] = v
+        return self
 
 
 class _JSONEncoder(json.JSONEncoder):
