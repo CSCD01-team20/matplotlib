@@ -3992,6 +3992,78 @@ def test_hlines():
     ax5.set_ylim(0, 15)
 
 
+@check_figures_equal()
+def test_vlines_with_nan_colors(fig_test, fig_ref):
+    colors1 = ['red', 'green', 'blue', 'purple', 'orange', 'black']
+    x1 = [2, 3, 4, 5, 6, 7]
+    y1 = [2, -6, 3, 8, np.nan, 2]
+
+    fig_test, ax1 = plt.subplots()
+    ax1.vlines(x1, 0, y1, colors=colors1, linewidth=5)
+
+    colors2 = ['red', 'green', 'blue', 'purple', 'black']
+    x2 = [2, 3, 4, 5, 7]
+    y2 = [2, -6, 3, 8, 2]
+    # Reference image
+    fig_ref, ax2 = plt.subplots()
+    ax2.vlines(x2, 0, y2, colors=colors2, linewidth=5)
+
+
+@check_figures_equal()
+def test_vlines_with_masked_colors(fig_test, fig_ref):
+    colors1 = ['red', 'green', 'blue', 'purple', 'orange', 'black']
+    fig_test, ax1 = plt.subplots()
+    x1 = np.ma.masked_equal([2, 4, 6, 8, 10, 12], 8)
+    ymin1 = np.ma.masked_equal([0, 1, -1, 0, 2, 1], 2)
+    ymax1 = np.ma.masked_equal([13, 14, 15, 16, 17, 18], 18)
+    ax1.vlines(x1, ymin1, ymax1, colors=colors1, linewidth=2)
+    ax1.set_xlim(0, 15)
+
+    colors2 = ['red', 'green', 'blue']
+    fig_ref, ax2 = plt.subplots()
+    x2 = np.asarray([2, 4, 6])
+    ymin2 = np.asarray([0, 1, -1])
+    ymax2 = np.asarray([13, 14, 15])
+    ax2.vlines(x2, ymin2, ymax2, colors=colors2, linewidth=2)
+    ax2.set_xlim(0, 15)
+
+
+@check_figures_equal()
+def test_hlines_with_nan_colors(fig_test, fig_ref):
+    colors1 = ['red', 'green', 'blue', 'purple', 'orange', 'black']
+    x1 = [2, 3, 4, 5, 6, 7]
+    y1 = [2, -6, 3, 8, np.nan, 2]
+
+    fig_test, ax1 = plt.subplots()
+    ax1.vlines(y1, 0, x1, colors=colors1, linewidth=5)
+
+    colors2 = ['red', 'green', 'blue', 'purple', 'black']
+    x2 = [2, 3, 4, 5, 7]
+    y2 = [2, -6, 3, 8, 2]
+    # Reference image
+    fig_ref, ax2 = plt.subplots()
+    ax2.vlines(y2, 0, x2, colors=colors2, linewidth=5)
+
+
+@check_figures_equal()
+def test_hlines_with_masked_colors(fig_test, fig_ref):
+    colors1 = ['red', 'green', 'blue', 'purple', 'orange', 'black']
+    fig_test, ax1 = plt.subplots()
+    y1 = np.ma.masked_equal([2, 4, 6, 8, 10, 12], 8)
+    xmin1 = np.ma.masked_equal([0, 1, -1, 0, 2, 1], 2)
+    xmax1 = np.ma.masked_equal([13, 14, 15, 16, 17, 18], 18)
+    ax1.vlines(y1, xmin1, xmax1, colors=colors1, linewidth=2)
+    ax1.set_xlim(0, 15)
+
+    colors2 = ['red', 'green', 'blue']
+    fig_ref, ax2 = plt.subplots()
+    y2 = np.asarray([2, 4, 6])
+    xmin2 = np.asarray([0, 1, -1])
+    xmax2 = np.asarray([13, 14, 15])
+    ax2.vlines(y2, xmin2, xmax2, colors=colors2, linewidth=2)
+    ax2.set_xlim(0, 15)
+
+
 @image_comparison(['step_linestyle', 'step_linestyle'], remove_text=True)
 def test_step_linestyle():
     x = y = np.arange(10)
