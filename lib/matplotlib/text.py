@@ -53,7 +53,7 @@ def get_rotation(rotation):
     """
     try:
         return float(rotation) % 360
-    except (ValueError, TypeError):
+    except (ValueError, TypeError) as err:
         if cbook._str_equal(rotation, 'horizontal') or rotation is None:
             return 0.
         elif cbook._str_equal(rotation, 'vertical'):
@@ -61,7 +61,7 @@ def get_rotation(rotation):
         else:
             raise ValueError("rotation is {!r}; expected either 'horizontal', "
                              "'vertical', numeric value, or None"
-                             .format(rotation))
+                             .format(rotation)) from err
 
 
 def _get_textbox(text, renderer):
@@ -174,8 +174,12 @@ class Text(Artist):
 
     def update(self, kwargs):
         # docstring inherited
-        # Update bbox last, as it depends on font properties.
         sentinel = object()  # bbox can be None, so use another sentinel.
+        # Update fontproperties first, as it has lowest priority.
+        fontproperties = kwargs.pop("fontproperties", sentinel)
+        if fontproperties is not sentinel:
+            self.set_fontproperties(fontproperties)
+        # Update bbox last, as it depends on font properties.
         bbox = kwargs.pop("bbox", sentinel)
         super().update(kwargs)
         if bbox is not sentinel:
@@ -1460,19 +1464,10 @@ class _AnnotationBase:
 
     def _get_ref_xy(self, renderer):
         """
-        Return x, y (in display coordinate) that is to be used for a reference
+        Return x, y (in display coordinates) that is to be used for a reference
         of any offset coordinate.
         """
-        def is_offset(s):
-            return isinstance(s, str) and s.split()[0] == "offset"
-
-        if isinstance(self.xycoords, tuple):
-            if any(map(is_offset, self.xycoords)):
-                raise ValueError("xycoords should not be an offset coordinate")
-        elif is_offset(self.xycoords):
-            raise ValueError("xycoords should not be an offset coordinate")
-        x, y = self.xy
-        return self._get_xy(renderer, x, y, self.xycoords)
+        return self._get_xy(renderer, *self.xy, self.xycoords)
 
     # def _get_bbox(self, renderer):
     #     if hasattr(bbox, "bounds"):
@@ -1795,9 +1790,23 @@ class Annotation(Text, _AnnotationBase):
         return contains, tinfo
 
     @property
+    def xycoords(self):
+        return self._xycoords
+
+    @xycoords.setter
+    def xycoords(self, xycoords):
+        def is_offset(s):
+            return isinstance(s, str) and s.startswith("offset")
+
+        if (isinstance(xycoords, tuple) and any(map(is_offset, xycoords))
+                or is_offset(xycoords)):
+            raise ValueError("xycoords cannot be an offset coordinate")
+        self._xycoords = xycoords
+
+    @property
     def xyann(self):
         """
-        The the text position.
+        The text position.
 
         See also *xytext* in `.Annotation`.
         """
@@ -1807,28 +1816,24 @@ class Annotation(Text, _AnnotationBase):
     def xyann(self, xytext):
         self.set_position(xytext)
 
-    @property
-    def anncoords(self):
-        """The coordinate system to use for `.Annotation.xyann`."""
+    def get_anncoords(self):
+        """
+        Return the coordinate system to use for `.Annotation.xyann`.
+
+        See also *xycoords* in `.Annotation`.
+        """
         return self._textcoords
 
-    @anncoords.setter
-    def anncoords(self, coords):
+    def set_anncoords(self, coords):
+        """
+        Set the coordinate system to use for `.Annotation.xyann`.
+
+        See also *xycoords* in `.Annotation`.
+        """
         self._textcoords = coords
 
-    get_anncoords = anncoords.fget
-    get_anncoords.__doc__ = """
-    Return the coordinate system to use for `.Annotation.xyann`.
-
-    See also *xycoords* in `.Annotation`.
-    """
-
-    set_anncoords = anncoords.fset
-    set_anncoords.__doc__ = """
-    Set the coordinate system to use for `.Annotation.xyann`.
-
-    See also *xycoords* in `.Annotation`.
-    """
+    anncoords = property(get_anncoords, set_anncoords, doc="""
+        The coordinate system to use for `.Annotation.xyann`.""")
 
     def set_figure(self, fig):
         # docstring inherited

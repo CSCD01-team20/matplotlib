@@ -189,15 +189,13 @@ if __name__ == '__main__':
         good_packages = []
         for package in mpl_packages:
             try:
-                result = package.check()
-                if result is not None:
-                    print_status(package.name, 'yes [%s]' % result)
-            except setupext.CheckFailed as e:
-                print_status(package.name, 'no  [%s]' % str(e))
-                if not package.optional:
-                    sys.exit("Failed to build %s" % package.name)
-            else:
-                good_packages.append(package)
+                message = package.check()
+            except setupext.Skipped as e:
+                print_status(package.name, f"no  [{e}]")
+                continue
+            if message is not None:
+                print_status(package.name, f"yes [{message}]")
+            good_packages.append(package)
 
         print_raw()
 
@@ -223,9 +221,9 @@ if __name__ == '__main__':
         with open('lib/matplotlib/mpl-data/matplotlibrc', 'w') as fd:
             fd.write(''.join(template_lines))
 
-        # Use Readme as long description
-        with open('README.rst') as fd:
-            long_description = fd.read()
+    # Use Readme as long description
+    with open('README.rst', encoding='utf-8') as fd:
+        long_description = fd.read()
 
     # Finally, pass this all along to distutils to do the heavy lifting.
     setup(
