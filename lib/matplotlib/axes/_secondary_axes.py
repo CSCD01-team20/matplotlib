@@ -39,8 +39,7 @@ class SecondaryAxis(_AxesBase):
     General class to hold a Secondary_X/Yaxis.
     """
 
-    def __init__(self, parent, orientation,
-                  location, functions, **kwargs):
+    def __init__(self, parent, orientation, location, functions, **kwargs):
         """
         See `.secondary_xaxis` and `.secondary_yaxis` for the doc string.
         While there is no need for this to be private, it should really be
@@ -203,7 +202,9 @@ class SecondaryAxis(_AxesBase):
                              'and the second being the inverse')
         self._set_scale()
 
-    def draw(self, renderer=None, inframe=False):
+    # Should be changed to draw(self, renderer) once the deprecation of
+    # renderer=None and of inframe expires.
+    def draw(self, *args, **kwargs):
         """
         Draw the secondary axes.
 
@@ -215,7 +216,7 @@ class SecondaryAxis(_AxesBase):
         self._set_lims()
         # this sets the scale in case the parent has set its scale.
         self._set_scale()
-        super().draw(renderer=renderer, inframe=inframe)
+        super().draw(*args, **kwargs)
 
     def _set_scale(self):
         """

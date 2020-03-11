@@ -253,10 +253,9 @@ class Figure(Artist):
                  edgecolor=None,
                  linewidth=0.0,
                  frameon=None,
-                 subplotpars=None,  # default to rc
-                 tight_layout=None,  # default to rc figure.autolayout
-                 constrained_layout=None,  # default to rc
-                                          #figure.constrained_layout.use
+                 subplotpars=None,  # rc figure.subplot.*
+                 tight_layout=None,  # rc figure.autolayout
+                 constrained_layout=None,  # rc figure.constrained_layout.use
                  ):
         """
         Parameters
@@ -574,7 +573,8 @@ class Figure(Artist):
 
         return w_pad, h_pad, wspace, hspace
 
-    def autofmt_xdate(self, bottom=0.2, rotation=30, ha='right', which=None):
+    def autofmt_xdate(
+            self, bottom=0.2, rotation=30, ha='right', which='major'):
         """
         Date ticklabels often overlap, so it is useful to rotate them
         and right align them.  Also, a common use case is a number of
@@ -586,18 +586,19 @@ class Figure(Artist):
         Parameters
         ----------
         bottom : scalar
-            The bottom of the subplots for :meth:`subplots_adjust`.
-
+            The bottom of the subplots for `subplots_adjust`.
         rotation : angle in degrees
             The rotation of the xtick labels.
-
         ha : str
             The horizontal alignment of the xticklabels.
-
-        which : {None, 'major', 'minor', 'both'}
-            Selects which ticklabels to rotate. Default is None which works
-            the same as major.
+        which : {'major', 'minor', 'both'}, default: 'major'
+            Selects which ticklabels to rotate.
         """
+        if which is None:
+            cbook.warn_deprecated(
+                "3.3", message="Support for passing which=None to mean "
+                "which='major' is deprecated since %(since)s and will be "
+                "removed %(removal)s.")
         allsubplots = all(hasattr(ax, 'is_last_row') for ax in self.axes)
         if len(self.axes) == 1:
             for label in self.axes[0].get_xticklabels(which=which):
@@ -1617,8 +1618,7 @@ default: 'top'
             return None
 
         self._axstack.remove(ax)
-        for func in self._axobservers:
-            func(self)
+        self._axobservers.process("_axes_change_event", self)
         self.stale = True
 
         last_ax = _break_share_link(ax, ax._shared_y_axes)
@@ -1654,7 +1654,7 @@ default: 'top'
         self.images = []
         self.legends = []
         if not keep_observers:
-            self._axobservers = []
+            self._axobservers = cbook.CallbackRegistry()
         self._suptitle = None
         if self.get_constrained_layout():
             layoutbox.nonetree(self._layoutbox)
@@ -1910,10 +1910,9 @@ default: 'top'
         return self.add_subplot(1, 1, 1, **kwargs)
 
     def sca(self, a):
-        """Set the current axes to be a and return a."""
+        """Set the current axes to be *a* and return *a*."""
         self._axstack.bubble(a)
-        for func in self._axobservers:
-            func(self)
+        self._axobservers.process("_axes_change_event", self)
         return a
 
     def _gci(self):
@@ -1953,12 +1952,10 @@ default: 'top'
     def __getstate__(self):
         state = super().__getstate__()
 
-        # the axobservers cannot currently be pickled.
-        # Additionally, the canvas cannot currently be pickled, but this has
-        # the benefit of meaning that a figure can be detached from one canvas,
-        # and re-attached to another.
-        for attr_to_pop in ('_axobservers', 'show',
-                            'canvas', '_cachedRenderer'):
+        # The canvas cannot currently be pickled, but this has the benefit
+        # of meaning that a figure can be detached from one canvas, and
+        # re-attached to another.
+        for attr_to_pop in ('canvas', '_cachedRenderer'):
             state.pop(attr_to_pop, None)
 
         # add version information to the state
@@ -1991,7 +1988,6 @@ default: 'top'
         self.__dict__ = state
 
         # re-initialise some of the unstored state information
-        self._axobservers = []
         FigureCanvasBase(self)  # Set self.canvas.
         self._layoutbox = None
 
@@ -2024,7 +2020,9 @@ default: 'top'
 
     def add_axobserver(self, func):
         """Whenever the axes state change, ``func(self)`` will be called."""
-        self._axobservers.append(func)
+        # Connect a wrapper lambda and not func itself, to avoid it being
+        # weakref-collected.
+        self._axobservers.connect("_axes_change_event", lambda arg: func(arg))
 
     def savefig(self, fname, *, transparent=None, **kwargs):
         """
