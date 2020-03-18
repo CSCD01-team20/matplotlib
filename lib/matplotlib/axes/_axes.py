@@ -4416,6 +4416,12 @@ default: :rc:`scatter.edgecolors`
         if len(s) not in (1, x.size):
             raise ValueError("s must be a scalar, or the same size as x and y")
 
+        marker_color_dict = self._get_patches_for_fill.\
+            get_color_marker_for_scatter()
+        if(c is None):
+            c = marker_color_dict['color']
+        default_marker = marker_color_dict['marker']
+
         c, colors, edgecolors = \
             self._parse_scatter_color_args(
                 c, edgecolors, kwargs, x.size,
@@ -4434,7 +4440,7 @@ default: :rc:`scatter.edgecolors`
 
         # load default marker from rcParams
         if marker is None:
-            marker = rcParams['scatter.marker']
+            marker = default_marker
 
         if isinstance(marker, mmarkers.MarkerStyle):
             marker_obj = marker

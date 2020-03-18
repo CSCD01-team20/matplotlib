@@ -221,6 +221,17 @@ class _process_plot_var_args:
             return 'k'
         return next(self.prop_cycler)['color']
 
+    def get_color_marker_for_scatter(self):
+        """Return the next color in the cycle."""
+        result = self._getdefaults(set(), {})
+        a = {'color': 'k', 'marker': 'o'}
+        if('color' in result):
+            a['color'] = result['color']
+        if('marker' in result):
+            a['marker'] = result['marker']
+        return a
+        # return self.prop_cycler.['marker']
+
     def _getdefaults(self, ignore, kw):
         """
         If some keys in the property cycle (excluding those in the set
