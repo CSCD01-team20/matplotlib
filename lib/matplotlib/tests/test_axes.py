@@ -6454,7 +6454,7 @@ def test_polar_interpolation_steps_variable_r(fig_test, fig_ref):
     fig_ref.add_subplot(projection="polar").plot(
         np.linspace(0, np.pi/2, 101), np.linspace(1, 2, 101))
 
-@image_comparison(['label_lines_default'])
+@image_comparison(['label_lines_default'], style="default")
 def test_label_lines_0():
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.spines['top'].set_visible(False)
@@ -6468,7 +6468,7 @@ def test_label_lines_0():
     plt.xticks(range(0, 3))
     ax.label_lines()
 
-@image_comparison(['label_lines_single_endpoint'])
+@image_comparison(['label_lines_single_endpoint'], style="default")
 def test_label_lines_1():
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.spines['top'].set_visible(False)
@@ -6483,7 +6483,7 @@ def test_label_lines_1():
     plt.xticks(range(0, 3))
     ax.label_lines()
 
-@image_comparison(['label_lines_different_x_endpoint'])
+@image_comparison(['label_lines_different_x_endpoint'], style="default")
 def test_label_lines_2():
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.spines['top'].set_visible(False)
