@@ -78,9 +78,9 @@ majors = ['Health Professions', 'Public Administration', 'Education',
 for column in majors:
     # Plot each line separately with its own color.
     column_rec_name = column.replace('\n', '_').replace(' ', '_')
-
+    column_label = column.replace('\n', ' ').replace(' ', ' ')
     line, = ax.plot('Year', column_rec_name, data=gender_degree_data,
-                    lw=2.5)
+                    lw=2.5, label=column_label)
 
 # Make the title big enough so it spans the entire plot, but don't make it
 # so big that it requires two lines to show.
