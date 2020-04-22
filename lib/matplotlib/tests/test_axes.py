@@ -6466,7 +6466,6 @@ def test_label_lines_0():
     plt.plot([0, 2], [1, 3], label="y=x+1")
     plt.plot([0, 2], [2, 4], label="y=x+2")
     plt.xticks(range(0, 4))
-    plt.yticks(range(-1, 6))
     ax.label_lines()
 
 @image_comparison(['label_lines_1'])
@@ -6482,7 +6481,6 @@ def test_label_lines_1():
     plt.plot([0, 2], [3, 2], label="Label 4")
     plt.plot([0, 2], [4, 2], label="Label 5")
     plt.xticks(range(0, 4))
-    plt.yticks(range(0, 5))
     ax.label_lines()
 
 @image_comparison(['label_lines_2'])
@@ -6503,5 +6501,5 @@ def test_label_lines_2():
     plt.plot([1, 2], [3, 3], label="Label 4")
     plt.plot([0, 1], [0.5, 0.5], label="Label 6")
     plt.xticks(range(0, 4))
-    plt.yticks(range(0, 6))
     ax.label_lines()
+

@@ -893,7 +893,7 @@ class Axes(_AxesBase):
             data_x, data_y = xy
 
             ideal_bucket = get_bucket_index(data_y)
-            if ideal_bucket != prev_ideal_bucket:
+            if ideal_bucket != prev_ideal_bucket and ideal_bucket < len(bucket_densities):
                 # If a bucket is dense, then we want to center the text around
                 # the bucket. SSo, find out how many empty buckets there are
                 # below the current bucket
@@ -930,7 +930,8 @@ class Axes(_AxesBase):
             if text_x is not None and text_y is not None:
                 text_color = handle.get_color()
                 line_label = self.annotate(label, (data_maxx, data_y),
-                                           xytext=(text_x, text_y),
+                                           textcoords='axes fraction',
+                                           xytext=(1,self.transLimits.transform((text_x, text_y))[1]),
                                            fontsize=text_fontsize,
                                            color=text_color,
                                            annotation_clip=True)
