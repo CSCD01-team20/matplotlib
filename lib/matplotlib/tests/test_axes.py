@@ -6142,9 +6142,9 @@ def test_polar_interpolation_steps_variable_r(fig_test, fig_ref):
     fig_ref.add_subplot(projection="polar").plot(
         np.linspace(0, np.pi/2, 101), np.linspace(1, 2, 101))
 
-@image_comparison(['label_lines_0'])
+@image_comparison(['label_lines_default'])
 def test_label_lines_0():
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 8))
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.get_xaxis().tick_bottom()
@@ -6153,12 +6153,12 @@ def test_label_lines_0():
     plt.plot([0, 2], [0, 2], label="y=x")
     plt.plot([0, 2], [1, 3], label="y=x+1")
     plt.plot([0, 2], [2, 4], label="y=x+2")
-    plt.xticks(range(0, 4))
+    plt.xticks(range(0, 3))
     ax.label_lines()
 
-@image_comparison(['label_lines_1'])
+@image_comparison(['label_lines_single_endpoint'])
 def test_label_lines_1():
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 8))
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.get_xaxis().tick_bottom()
@@ -6168,12 +6168,12 @@ def test_label_lines_1():
     plt.plot([0, 2], [2, 2], label="Label 3")
     plt.plot([0, 2], [3, 2], label="Label 4")
     plt.plot([0, 2], [4, 2], label="Label 5")
-    plt.xticks(range(0, 4))
+    plt.xticks(range(0, 3))
     ax.label_lines()
 
-@image_comparison(['label_lines_2'])
+@image_comparison(['label_lines_different_x_endpoint'])
 def test_label_lines_2():
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 8))
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.get_xaxis().tick_bottom()
@@ -6188,6 +6188,6 @@ def test_label_lines_2():
     plt.plot([0, 1], [3.5, 3.5], label="Label 9")
     plt.plot([1, 2], [3, 3], label="Label 4")
     plt.plot([0, 1], [0.5, 0.5], label="Label 6")
-    plt.xticks(range(0, 4))
+    plt.xticks(range(0, 3))
     ax.label_lines()
 
