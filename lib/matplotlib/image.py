@@ -1475,7 +1475,7 @@ def imsave(fname, arr, vmin=None, vmax=None, cmap=None, format=None,
 
     Parameters
     ----------
-    fname : str or PathLike or file-like
+    fname : str or path-like or file-like
         A path or a file-like object to store the image in.
         If *format* is not set, then the output format is inferred from the
         extension of *fname*, if any, and from :rc:`savefig.format` otherwise.
@@ -1639,7 +1639,7 @@ def thumbnail(infile, thumbfile, scale=0.1, interpolation='bilinear',
         thus supports a wide range of file formats, including PNG, JPG, TIFF
         and others.
 
-        .. _Pillow: http://python-pillow.org/
+        .. _Pillow: https://python-pillow.org/
 
     thumbfile : str or file-like
         The thumbnail filename.

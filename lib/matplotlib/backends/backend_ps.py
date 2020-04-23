@@ -7,12 +7,12 @@ from enum import Enum
 import glob
 from io import StringIO, TextIOWrapper
 import logging
+import math
 import os
 import pathlib
 import re
 import shutil
 from tempfile import TemporaryDirectory
-import textwrap
 import time
 
 import numpy as np
@@ -176,7 +176,7 @@ class RendererPS(_backend_pdf_ps.RendererPDFPSBase):
 
     @cbook.deprecated("3.3")
     def track_characters(self, *args, **kwargs):
-        """Keeps track of which characters are required from each font."""
+        """Keep track of which characters are required from each font."""
         self._character_tracker.track(*args, **kwargs)
 
     @cbook.deprecated("3.3")
@@ -286,9 +286,17 @@ class RendererPS(_backend_pdf_ps.RendererPDFPSBase):
         h, w = im.shape[:2]
         imagecmd = "false 3 colorimage"
         data = im[::-1, :, :3]  # Vertically flipped rgb values.
-        # data.tobytes().hex() has no spaces, so can be linewrapped by relying
-        # on textwrap.fill breaking long words.
-        hexlines = textwrap.fill(data.tobytes().hex(), 128)
+        # data.tobytes().hex() has no spaces, so can be linewrapped by simply
+        # splitting data every nchars. It's equivalent to textwrap.fill only
+        # much faster.
+        nchars = 128
+        data = data.tobytes().hex()
+        hexlines = "\n".join(
+            [
+                data[n * nchars:(n + 1) * nchars]
+                for n in range(math.ceil(len(data) / nchars))
+            ]
+        )
 
         if transform is None:
             matrix = "1 0 0 1 0 0"
@@ -438,14 +446,12 @@ newpath
                 linewidths, linestyles, antialiaseds, urls,
                 offset_position)
 
-        write = self._pswriter.write
-
         path_codes = []
         for i, (path, transform) in enumerate(self._iter_collection_raw_paths(
                 master_transform, paths, all_transforms)):
             name = 'p%x_%x' % (self._path_collection_id, i)
             path_bytes = self._convert_path(path, transform, simplify=False)
-            write(f"""\
+            self._pswriter.write(f"""\
 /{name} {{
 newpath
 translate
@@ -484,8 +490,7 @@ translate
                 r'\psfrag{%s}[Bl][Bl][1][%f]{\fontsize{%f}{%f}%s}' % (
                     thetext, angle, fontsize, fontsize*1.25, tex))
         else:
-            # Stick to the bottom alignment, but this may give incorrect
-            # baseline some times.
+            # Stick to the bottom alignment.
             pos = _nums_to_str(x-corr, y-bl)
             self.psfrag.append(
                 r'\psfrag{%s}[bl][bl][1][%f]{\fontsize{%f}{%f}%s}' % (
@@ -503,10 +508,8 @@ grestore
     def draw_text(self, gc, x, y, s, prop, angle, ismath=False, mtext=None):
         # docstring inherited
 
-        # local to avoid repeated attribute lookups
-        write = self._pswriter.write
         if debugPS:
-            write("% text\n")
+            self._pswriter.write("% text\n")
 
         if _is_transparent(gc.get_rgb()):
             return  # Special handling for fully transparent.
@@ -934,10 +937,7 @@ class FigureCanvasPS(FigureCanvasBase):
                   file=fh)
 
             # write the figure
-            content = self._pswriter.getvalue()
-            if not isinstance(content, str):
-                content = content.decode('ascii')
-            print(content, file=fh)
+            print(self._pswriter.getvalue(), file=fh)
 
             # write the trailer
             print("end", file=fh)
@@ -1098,18 +1098,20 @@ def convert_psfrags(tmpfile, psfrags, font_preamble, custom_preamble,
     with mpl.rc_context({
             "text.latex.preamble":
             mpl.rcParams["text.latex.preamble"] +
-            r"\usepackage{psfrag,color}"
-            r"\usepackage[dvips]{graphicx}"
-            r"\PassOptionsToPackage{dvips}{geometry}"}):
+            r"\usepackage{psfrag,color}""\n"
+            r"\usepackage[dvips]{graphicx}""\n"
+            r"\geometry{papersize={%(width)sin,%(height)sin},"
+            r"body={%(width)sin,%(height)sin},margin=0in}"
+            % {"width": paper_width, "height": paper_height}
+    }):
         dvifile = TexManager().make_dvi(
-            r"\newgeometry{papersize={%(width)sin,%(height)sin},"
-            r"body={%(width)sin,%(height)sin}, margin={0in,0in}}""\n"
-            r"\begin{figure}"
-            r"\centering\leavevmode%(psfrags)s"
-            r"\includegraphics*[angle=%(angle)s]{%(epsfile)s}"
+            "\n"
+            r"\begin{figure}""\n"
+            r"  \centering\leavevmode""\n"
+            r"  %(psfrags)s""\n"
+            r"  \includegraphics*[angle=%(angle)s]{%(epsfile)s}""\n"
             r"\end{figure}"
             % {
-                "width": paper_width, "height": paper_height,
                 "psfrags": "\n".join(psfrags),
                 "angle": 90 if orientation == 'landscape' else 0,
                 "epsfile": pathlib.Path(tmpfile).resolve().as_posix(),

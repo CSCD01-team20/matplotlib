@@ -151,7 +151,7 @@ and containment checks) via `.Line2D.set_picker` is deprecated.  Use
 
 ``Artist.set_contains``, ``Artist.get_contains``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Setting a custom method overridding `.Artist.contains` is deprecated.
+Setting a custom method overriding `.Artist.contains` is deprecated.
 There is no replacement, but you may still customize pick events using
 `.Artist.set_picker`.
 
@@ -366,11 +366,16 @@ The ``Fil``, ``Fill``, ``Filll``, ``NegFil``, ``NegFill``, ``NegFilll``, and
 ``SsGlue`` classes in the :mod:`matplotlib.mathtext` module are deprecated.
 As an alternative, directly construct glue instances with ``Glue("fil")``, etc.
 
-NavigationToolbar2QT.parent
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This attribute is deprecated.  In order to access the parent window, use
+NavigationToolbar2QT.parent and .basedir
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+These attributes are deprecated.  In order to access the parent window, use
 ``toolbar.canvas.parent()``.  Once the deprecation period is elapsed, it will
-also be accessible as ``toolbar.parent()``.
+also be accessible as ``toolbar.parent()``.  The base directory to the icons
+is ``os.path.join(mpl.get_data_path(), "images")``.
+
+NavigationToolbar2QT.ctx
+~~~~~~~~~~~~~~~~~~~~~~~~
+This attribute is deprecated.
 
 Path helpers in :mod:`.bezier`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -426,3 +431,46 @@ future.
 *minor* kwarg to `.Axis.get_ticklocs` will become keyword-only
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Passing this argument positionally is deprecated.
+
+Case-insensitive properties
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Normalization of upper or mixed-case property names to lowercase in
+`.Artist.set` and `.Artist.update` is deprecated.  In the future, property
+names will be passed as is, allowing one to pass names such as *patchA* or
+*UVC*.
+
+``ContourSet.ax``, ``Quiver.ax``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+These attributes are deprecated in favor of ``ContourSet.axes`` and
+``Quiver.axes``, for consistency with other artists.
+
+``Locator.refresh()`` and associated methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``Locator.refresh()`` is deprecated.  This method was called at certain places
+to let locators update their internal state, typically based on the axis
+limits.  Locators should now always consult the axis limits when called, if
+needed.
+
+The associated helper methods ``NavigationToolbar2.draw()`` and
+``ToolViewsPositions.refresh_locators()`` are deprecated, and should be
+replaced by calls to ``draw_idle()`` on the corresponding canvas.
+
+`.ScalarMappable` checkers
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``add_checker`` and ``check_update`` methods and ``update_dict`` attribute
+of `.ScalarMappable` are deprecated.
+
+``ColorbarBase`` parameters will become keyword-only
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+All parameters of ``ColorbarBase``, except for the first (*ax*), will become
+keyword-only, consistently with ``Colorbar``.
+
+`.Axes.pie` radius and startangle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Passing ``None`` as either the ``radius`` or ``startangle`` of an `.Axes.pie`
+is deprecated; use the explicit defaults of 1 and 0, respectively, instead.
+
+``AxisArtist.dpi_transform``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+... is deprecated.  Scale ``Figure.dpi_scale_trans`` by 1/72 to achieve the
+same effect.

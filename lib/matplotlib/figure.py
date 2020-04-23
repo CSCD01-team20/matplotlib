@@ -1204,13 +1204,18 @@ default: 'top'
             fig.add_axes(ax)
         """
 
-        if not len(args):
+        if not len(args) and 'rect' not in kwargs:
             cbook.warn_deprecated(
                 "3.3",
                 message="Calling add_axes() without argument is "
                 "deprecated. You may want to use add_subplot() "
                 "instead.")
             return
+        elif 'rect' in kwargs:
+            if len(args):
+                raise TypeError(
+                    "add_axes() got multiple values for argument 'rect'")
+            args = (kwargs.pop('rect'), )
 
         # shortcut the projection "key" modifications later on, if an axes
         # with the exact args/kwargs exists, return it immediately.
@@ -1599,7 +1604,7 @@ default: 'top'
         def _reset_locators_and_formatters(axis):
             # Set the formatters and locators to be associated with axis
             # (where previously they may have been associated with another
-            # Axis isntance)
+            # Axis instance)
             #
             # Because set_major_formatter() etc. force isDefault_* to be False,
             # we have to manually check if the original formatter was a
@@ -2044,7 +2049,7 @@ default: 'top'
 
         Parameters
         ----------
-        fname : str or PathLike or file-like object
+        fname : str or path-like or file-like
             A path, or a Python file-like object, or
             possibly some backend-dependent object such as
             `matplotlib.backends.backend_pdf.PdfPages`.

@@ -174,7 +174,7 @@ wx backend has been updated
 ```````````````````````````
 
 The wx backend can now be used with both wxPython classic and
-`Phoenix <http://wxpython.org/Phoenix/docs/html/main.html>`__.
+`Phoenix <https://wxpython.org/Phoenix/docs/html/main.html>`__.
 
 wxPython classic has to be at least version 2.8.12 and works on Python 2.x. As
 of May 2015 no official release of wxPython Phoenix is available but a
@@ -622,7 +622,7 @@ backends include a `ToolContainer` called `toolbar`
     be treated as experimental until further notice as API changes will occur.
     For the moment the `.ToolManager` works only with the GTK3 and Tk backends.
     Make sure you use one of those.
-    Port for the rest of the backends is comming soon.
+    Port for the rest of the backends is coming soon.
 
     To activate the `.ToolManager` include the following at the top of your file ::
 

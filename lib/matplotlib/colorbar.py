@@ -297,8 +297,6 @@ class _ColorbarLogLocator(ticker.LogLocator):
     """
     def __init__(self, colorbar, *args, **kwargs):
         """
-        _ColorbarLogLocator(colorbar, *args, **kwargs)
-
         This ticker needs to know the *colorbar* so that it can access
         its *vmin* and *vmax*.  Otherwise it is the same as
         `~.ticker.LogLocator`.  The ``*args`` and ``**kwargs`` are the
@@ -396,6 +394,7 @@ class ColorbarBase:
 
     n_rasterize = 50  # rasterize solids if number of colors >= n_rasterize
 
+    @cbook._make_keyword_only("3.3", "cmap")
     def __init__(self, ax, cmap=None,
                  norm=None,
                  alpha=None,
@@ -1110,7 +1109,7 @@ class ColorbarBase:
         # copy the norm and change the vmin and vmax to the vmin and
         # vmax of the colorbar, not the norm.  This allows the situation
         # where the colormap has a narrower range than the colorbar, to
-        # accomodate extra contours:
+        # accommodate extra contours:
         norm = copy.copy(self.norm)
         norm.vmin = self.vmin
         norm.vmax = self.vmax

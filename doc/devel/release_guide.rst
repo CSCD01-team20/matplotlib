@@ -107,7 +107,7 @@ For the "what's new",
  1. copy the current content to a file in :file:`doc/users/prev_whats_new`
  2. merge all of the files in :file:`doc/users/next_whats_new/` into
     :file:`doc/users/whats_new.rst` and delete the individual files
- 3. comment out the next whats new glob at the top
+ 3. comment out the next what's new glob at the top
 
 Similarly for the "API changes",
 
@@ -362,5 +362,5 @@ numpy/scipy/scikit-image mailing lists.
 
 In addition, announcements should be made on social networks (twitter
 via the ``@matplotlib`` account, any other via personal accounts).
-`NumFOCUS <https://www.numfocus.org/>`__ should be contacted for
+`NumFOCUS <https://numfocus.org/>`__ should be contacted for
 inclusion in their newsletter.

@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib as mpl
 from . import _path, cbook
 from .cbook import _to_unmasked_float_array, simple_linear_interpolation
+from .bezier import BezierSegment
 
 
 class Path:
@@ -359,9 +360,10 @@ class Path:
                       snap=False, stroke_width=1.0, simplify=None,
                       curves=True, sketch=None):
         """
-        Iterates over all of the curve segments in the path.  Each iteration
-        returns a 2-tuple ``(vertices, code)``, where ``vertices`` is a
-        sequence of 1-3 coordinate pairs, and ``code`` is a `Path` code.
+        Iterate over all curve segments in the path.
+
+        Each iteration returns a pair ``(vertices, code)``, where ``vertices``
+        is a sequence of 1-3 coordinate pairs, and ``code`` is a `Path` code.
 
         Additionally, this method can provide a number of standard cleanups and
         conversions to the path.
@@ -379,7 +381,7 @@ class Path:
             defining a rectangle in which to clip the path.
         snap : None or bool, optional
             If True, snap all nodes to pixels; if False, don't snap them.
-            If None, perform snapping if the path contains only segments
+            If None, snap if the path contains only segments
             parallel to the x or y axes, and no more than 1024 of them.
         stroke_width : float, optional
             The width of the stroke being drawn (used for path snapping).
@@ -419,6 +421,53 @@ class Path:
                     next(codes)
                     curr_vertices = np.append(curr_vertices, next(vertices))
             yield curr_vertices, code
+
+    def iter_bezier(self, **kwargs):
+        """
+        Iterate over each bezier curve (lines included) in a Path.
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to `.iter_segments`.
+
+        Yields
+        ------
+        B : matplotlib.bezier.BezierSegment
+            The bezier curves that make up the current path. Note in particular
+            that freestanding points are bezier curves of order 0, and lines
+            are bezier curves of order 1 (with two control points).
+        code : Path.code_type
+            The code describing what kind of curve is being returned.
+            Path.MOVETO, Path.LINETO, Path.CURVE3, Path.CURVE4 correspond to
+            bezier curves with 1, 2, 3, and 4 control points (respectively).
+            Path.CLOSEPOLY is a Path.LINETO with the control points correctly
+            chosen based on the start/end points of the current stroke.
+        """
+        first_vert = None
+        prev_vert = None
+        for verts, code in self.iter_segments(**kwargs):
+            if first_vert is None:
+                if code != Path.MOVETO:
+                    raise ValueError("Malformed path, must start with MOVETO.")
+            if code == Path.MOVETO:  # a point is like "CURVE1"
+                first_vert = verts
+                yield BezierSegment(np.array([first_vert])), code
+            elif code == Path.LINETO:  # "CURVE2"
+                yield BezierSegment(np.array([prev_vert, verts])), code
+            elif code == Path.CURVE3:
+                yield BezierSegment(np.array([prev_vert, verts[:2],
+                                              verts[2:]])), code
+            elif code == Path.CURVE4:
+                yield BezierSegment(np.array([prev_vert, verts[:2],
+                                              verts[2:4], verts[4:]])), code
+            elif code == Path.CLOSEPOLY:
+                yield BezierSegment(np.array([prev_vert, first_vert])), code
+            elif code == Path.STOP:
+                return
+            else:
+                raise ValueError("Invalid Path.code_type: " + str(code))
+            prev_vert = verts[-2:]
 
     @cbook._delete_parameter("3.3", "quantize")
     def cleaned(self, transform=None, remove_nans=False, clip=None,
@@ -522,28 +571,38 @@ class Path:
         Return whether this (closed) path completely contains the given path.
 
         If *transform* is not ``None``, the path will be transformed before
-        performing the test.
+        checking for containment.
         """
         if transform is not None:
             transform = transform.frozen()
         return _path.path_in_path(self, None, path, transform)
 
-    def get_extents(self, transform=None):
+    def get_extents(self, transform=None, **kwargs):
         """
-        Return the extents (*xmin*, *ymin*, *xmax*, *ymax*) of the path.
+        Get Bbox of the path.
 
-        Unlike computing the extents on the *vertices* alone, this
-        algorithm will take into account the curves and deal with
-        control points appropriately.
+        Parameters
+        ----------
+        transform : matplotlib.transforms.Transform, optional
+            Transform to apply to path before computing extents, if any.
+        **kwargs
+            Forwarded to `.iter_bezier`.
+
+        Returns
+        -------
+        matplotlib.transforms.Bbox
+            The extents of the path Bbox([[xmin, ymin], [xmax, ymax]])
         """
         from .transforms import Bbox
-        path = self
         if transform is not None:
-            transform = transform.frozen()
-            if not transform.is_affine:
-                path = self.transformed(transform)
-                transform = None
-        return Bbox(_path.get_path_extents(path, transform))
+            self = transform.transform_path(self)
+        bbox = Bbox.null()
+        for curve, code in self.iter_bezier(**kwargs):
+            # places where the derivative is zero can be extrema
+            _, dzeros = curve.axis_aligned_extrema()
+            # as can the ends of the curve
+            bbox.update_from_data_xy(curve([0, *dzeros, 1]), ignore=False)
+        return bbox
 
     def intersects_path(self, other, filled=True):
         """
@@ -733,7 +792,7 @@ class Path:
         The circle is approximated using 8 cubic Bezier curves, as described in
 
           Lancaster, Don.  `Approximating a Circle or an Ellipse Using Four
-          Bezier Cubic Splines <http://www.tinaja.com/glib/ellipse4.pdf>`_.
+          Bezier Cubic Splines <https://www.tinaja.com/glib/ellipse4.pdf>`_.
         """
         MAGIC = 0.2652031
         SQRTHALF = np.sqrt(0.5)

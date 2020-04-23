@@ -114,7 +114,8 @@ class Axes(_AxesBase):
         title = cbook._check_getitem(titles, loc=loc.lower())
         return title.get_text()
 
-    def set_title(self, label, fontdict=None, loc=None, pad=None, **kwargs):
+    def set_title(self, label, fontdict=None, loc=None, pad=None, *, y=None,
+                  **kwargs):
         """
         Set a title for the axes.
 
@@ -140,6 +141,11 @@ class Axes(_AxesBase):
         loc : {'center', 'left', 'right'}, default: :rc:`axes.titlelocation`
             Which title to set.
 
+        y : float, default: :rc:`axes.titley`
+            Vertical axes loation for the title (1.0 is the top).  If
+            None (the default), y is determined automatically to avoid
+            decorators on the axes.
+
         pad : float, default: :rc:`axes.titlepad`
             The offset of the title from the top of the axes, in points.
 
@@ -156,6 +162,14 @@ class Axes(_AxesBase):
         """
         if loc is None:
             loc = rcParams['axes.titlelocation']
+
+        if y is None:
+            y = rcParams['axes.titley']
+        if y is None:
+            y = 1.0
+        else:
+            self._autotitlepos = False
+        kwargs['y'] = y
 
         titles = {'left': self._left_title,
                   'center': self.title,
@@ -1039,7 +1053,7 @@ class Axes(_AxesBase):
         --------
         vlines : Add vertical lines in data coordinates.
         axvspan : Add a vertical span (rectangle) across the axis.
-        axline : Add a line with an abritrary slope.
+        axline : Add a line with an arbitrary slope.
 
         Examples
         --------
@@ -2958,7 +2972,7 @@ class Axes(_AxesBase):
         -----
         .. seealso::
             The MATLAB function
-            `stem <http://www.mathworks.com/help/techdoc/ref/stem.html>`_
+            `stem <https://www.mathworks.com/help/matlab/ref/stem.html>`_
             which inspired this method.
         """
         if not 1 <= len(args) <= 5:
@@ -3056,7 +3070,7 @@ class Axes(_AxesBase):
     @_preprocess_data(replace_names=["x", "explode", "labels", "colors"])
     def pie(self, x, explode=None, labels=None, colors=None,
             autopct=None, pctdistance=0.6, shadow=False, labeldistance=1.1,
-            startangle=None, radius=None, counterclock=True,
+            startangle=0, radius=1, counterclock=True,
             wedgeprops=None, textprops=None, center=(0, 0),
             frame=False, rotatelabels=False):
         """
@@ -3089,7 +3103,7 @@ class Axes(_AxesBase):
         autopct : None or str or callable, default: None
             If not *None*, is a string or function used to label the wedges
             with their numeric value.  The label will be placed inside the
-            wedge.  If it is a format string, the label will be ``fmt%pct``.
+            wedge.  If it is a format string, the label will be ``fmt % pct``.
             If it is a function, it will be called.
 
         pctdistance : float, default: 0.6
@@ -3104,12 +3118,12 @@ class Axes(_AxesBase):
             If set to ``None``, label are not drawn, but are stored for use in
             ``legend()``
 
-        startangle : float, default: None
-            If not *None*, rotates the start of the pie chart by *angle*
-            degrees counterclockwise from the x-axis.
+        startangle : float, default: 0 degrees
+            The angle by which the start of the pie is rotated,
+            counterclockwise from the x-axis.
 
-        radius : float, default: None
-            The radius of the pie, if *radius* is *None* it will be set to 1.
+        radius : float, default: 1
+            The radius of the pie.
 
         counterclock : bool, default: True
             Specify fractions direction, clockwise or counterclockwise.
@@ -3187,22 +3201,25 @@ class Axes(_AxesBase):
                 return next(color_cycle)
 
         if radius is None:
+            cbook.warn_deprecated(
+                "3.3", message="Support for passing a radius of None to mean "
+                "1 is deprecated since %(since)s and will be removed "
+                "%(removal)s.")
             radius = 1
 
         # Starting theta1 is the start fraction of the circle
         if startangle is None:
-            theta1 = 0
-        else:
-            theta1 = startangle / 360.0
+            cbook.warn_deprecated(
+                "3.3", message="Support for passing a startangle of None to "
+                "mean 0 is deprecated since %(since)s and will be removed "
+                "%(removal)s.")
+            startangle = 0
+        theta1 = startangle / 360
 
-        # set default values in wedge_prop
         if wedgeprops is None:
             wedgeprops = {}
-        wedgeprops.setdefault('clip_on', False)
-
         if textprops is None:
             textprops = {}
-        textprops.setdefault('clip_on', False)
 
         texts = []
         slices = []
@@ -3218,18 +3235,17 @@ class Axes(_AxesBase):
             w = mpatches.Wedge((x, y), radius, 360. * min(theta1, theta2),
                                360. * max(theta1, theta2),
                                facecolor=get_next_color(),
-                               **wedgeprops)
+                               clip_on=False,
+                               label=label)
+            w.set(**wedgeprops)
             slices.append(w)
             self.add_patch(w)
-            w.set_label(label)
 
             if shadow:
-                # make sure to add a shadow after the call to
-                # add_patch so the figure and transform props will be
-                # set
+                # Make sure to add a shadow after the call to add_patch so the
+                # figure and transform props will be set.
                 shad = mpatches.Shadow(w, -0.02, -0.02)
-                shad.set_zorder(0.9 * w.get_zorder())
-                shad.set_label('_nolegend_')
+                shad.set(zorder=0.9 * w.get_zorder(), label='_nolegend_')
                 self.add_patch(shad)
 
             if labeldistance is not None:
@@ -3242,14 +3258,13 @@ class Axes(_AxesBase):
                     label_alignment_v = 'bottom' if yt > 0 else 'top'
                     label_rotation = (np.rad2deg(thetam)
                                       + (0 if xt > 0 else 180))
-                props = dict(horizontalalignment=label_alignment_h,
-                             verticalalignment=label_alignment_v,
-                             rotation=label_rotation,
-                             size=rcParams['xtick.labelsize'])
-                props.update(textprops)
-
-                t = self.text(xt, yt, label, **props)
-
+                t = self.text(xt, yt, label,
+                              clip_on=False,
+                              horizontalalignment=label_alignment_h,
+                              verticalalignment=label_alignment_v,
+                              rotation=label_rotation,
+                              size=rcParams['xtick.labelsize'])
+                t.set(**textprops)
                 texts.append(t)
 
             if autopct is not None:
@@ -3262,25 +3277,19 @@ class Axes(_AxesBase):
                 else:
                     raise TypeError(
                         'autopct must be callable or a format string')
-
-                props = dict(horizontalalignment='center',
-                             verticalalignment='center')
-                props.update(textprops)
-                t = self.text(xt, yt, s, **props)
-
+                t = self.text(xt, yt, s,
+                              clip_on=False,
+                              horizontalalignment='center',
+                              verticalalignment='center')
+                t.set(**textprops)
                 autotexts.append(t)
 
             theta1 = theta2
 
         if not frame:
-            self.set_frame_on(False)
-
-            self.set_xlim((-1.25 + center[0],
-                           1.25 + center[0]))
-            self.set_ylim((-1.25 + center[1],
-                           1.25 + center[1]))
-            self.set_xticks([])
-            self.set_yticks([])
+            self.set(frame_on=False, xticks=[], yticks=[],
+                     xlim=(-1.25 + center[0], 1.25 + center[0]),
+                     ylim=(-1.25 + center[1], 1.25 + center[1]))
 
         if autopct is None:
             return slices, texts
@@ -5263,7 +5272,7 @@ default: :rc:`scatter.edgecolors`
             self, ind_dir, ind, dep1, dep2=0, *,
             where=None, interpolate=False, step=None, **kwargs):
         # Common implementation between fill_between (*ind_dir*="x") and
-        # fill_betweenx (*ind_dir*="y").  *ind* is the indepedent variable,
+        # fill_betweenx (*ind_dir*="y").  *ind* is the independent variable,
         # *dep* the dependent variable.  The docstring below is interpolated
         # to generate both methods' docstrings.
         """
@@ -5561,7 +5570,7 @@ default: :rc:`scatter.edgecolors`
 
             If *interpolation* is 'none', then no interpolation is performed
             on the Agg, ps, pdf and svg backends. Other backends will fall back
-            to 'nearest'. Note that most SVG renders perform interpolation at
+            to 'nearest'. Note that most SVG renderers perform interpolation at
             rendering and that the default interpolation method they implement
             may differ.
 
@@ -7004,12 +7013,12 @@ default: :rc:`scatter.edgecolors`
         weights : array-like, shape (n, ), optional
             An array of values w_i weighing each sample (x_i, y_i).
 
-        cmin : scalar, optional, default: None
+        cmin : scalar, default: None
             All bins that has count less than cmin will not be displayed (set
             to NaN before passing to imshow) and these count values in the
             return value count histogram will also be set to nan upon return.
 
-        cmax : scalar, optional, default: None
+        cmax : scalar, default: None
             All bins that has count more than cmax will not be displayed (set
             to NaN before passing to imshow) and these count values in the
             return value count histogram will also be set to nan upon return.
@@ -8005,7 +8014,8 @@ default: :rc:`scatter.edgecolors`
 
     def violin(self, vpstats, positions=None, vert=True, widths=0.5,
                showmeans=False, showextrema=True, showmedians=False):
-        """Drawing function for violin plots.
+        """
+        Drawing function for violin plots.
 
         Draw a violin plot for each column of *vpstats*. Each filled area
         extends to represent the entire data range, with optional lines at the

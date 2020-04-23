@@ -10,7 +10,6 @@ from matplotlib._pylab_helpers import Gcf
 from matplotlib.backend_bases import (
     _Backend, FigureCanvasBase, FigureManagerBase, NavigationToolbar2,
     StatusbarBase, TimerBase, ToolContainerBase, cursors)
-from matplotlib.backend_managers import ToolManager
 from matplotlib.figure import Figure
 from matplotlib.widgets import SubplotTool
 
@@ -52,6 +51,10 @@ except TypeError as exc:
 
 class TimerGTK3(TimerBase):
     """Subclass of `.TimerBase` using GTK3 timer events."""
+
+    def __init__(self, *args, **kwargs):
+        self._timer = None
+        TimerBase.__init__(self, *args, **kwargs)
 
     def _timer_start(self):
         # Need to stop it, otherwise we potentially leak a timer id that will
@@ -343,7 +346,6 @@ class FigureManagerGTK3(FigureManagerBase):
         w = int(self.canvas.figure.bbox.width)
         h = int(self.canvas.figure.bbox.height)
 
-        self.toolmanager = self._get_toolmanager()
         self.toolbar = self._get_toolbar()
         self.statusbar = None
 
@@ -420,14 +422,6 @@ class FigureManagerGTK3(FigureManagerBase):
             toolbar = None
         return toolbar
 
-    def _get_toolmanager(self):
-        # must be initialised after toolbar has been set
-        if mpl.rcParams['toolbar'] == 'toolmanager':
-            toolmanager = ToolManager(self.canvas.figure)
-        else:
-            toolmanager = None
-        return toolmanager
-
     def get_window_title(self):
         return self.window.get_title()
 
@@ -458,7 +452,11 @@ class NavigationToolbar2GTK3(NavigationToolbar2, Gtk.Toolbar):
         self.win = window
         GObject.GObject.__init__(self)
         NavigationToolbar2.__init__(self, canvas)
-        self.ctx = None
+
+    @cbook.deprecated("3.3")
+    @property
+    def ctx(self):
+        return self.canvas.get_property("window").cairo_create()
 
     def set_message(self, s):
         self.message.set_label(s)
@@ -470,7 +468,7 @@ class NavigationToolbar2GTK3(NavigationToolbar2, Gtk.Toolbar):
     def draw_rubberband(self, event, x0, y0, x1, y1):
         # adapted from
         # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/189744
-        self.ctx = self.canvas.get_property("window").cairo_create()
+        ctx = self.canvas.get_property("window").cairo_create()
 
         # todo: instead of redrawing the entire figure, copy the part of
         # the figure that was covered by the previous rubberband rectangle
@@ -483,11 +481,11 @@ class NavigationToolbar2GTK3(NavigationToolbar2, Gtk.Toolbar):
         h = abs(y1 - y0)
         rect = [int(val) for val in (min(x0, x1), min(y0, y1), w, h)]
 
-        self.ctx.new_path()
-        self.ctx.set_line_width(0.5)
-        self.ctx.rectangle(rect[0], rect[1], rect[2], rect[3])
-        self.ctx.set_source_rgb(0, 0, 0)
-        self.ctx.stroke()
+        ctx.new_path()
+        ctx.set_line_width(0.5)
+        ctx.rectangle(*rect)
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.stroke()
 
     def _init_toolbar(self):
         self.set_style(Gtk.ToolbarStyle.ICONS)
@@ -528,7 +526,7 @@ class NavigationToolbar2GTK3(NavigationToolbar2, Gtk.Toolbar):
             button = self._gtk_ids.get(name)
             if button:
                 with button.handler_block(button._signal_handler):
-                    button.set_active(self._active == active)
+                    button.set_active(self.mode.name == active)
 
     def pan(self, *args):
         super().pan(*args)
